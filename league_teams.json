@@ -1,0 +1,138 @@
+{
+    "gameId": 1,
+    "id": 642470,
+    "members": [
+        {
+        "displayName": "17nymets17",
+        "id": "{013A40E9-39E7-4755-B964-8EA33F37684C}",
+        "isLeagueManager": false
+    }, {
+        "displayName": "ESPNFAN9616477528",
+        "id": "{19E9E8F2-4E05-4474-A9E8-F24E05047450}",
+        "isLeagueManager": false
+    }, {
+        "displayName": "Peaches_19",
+        "id": "{30A5B886-430B-4A5B-8D83-8F25539538A7}",
+        "isLeagueManager": false
+    }, {
+        "displayName": "espn17305320",
+        "id": "{322BCBE7-BD43-4DE9-8D8C-41067DFFD93A}",
+        "isLeagueManager": false
+    }, {
+        "displayName": "UNCNation21",
+        "id": "{3FEFC051-6115-43D6-AFC0-516115F3D625}",
+        "isLeagueManager": false
+    }, {
+        "displayName": "Dontknownothingboutbball",
+        "id": "{4DCA8C0B-F8EB-4E43-8A8C-0BF8EBBE431A}",
+        "isLeagueManager": false
+    }, {
+        "displayName": "emmbee57",
+        "id": "{67FD37AE-94A3-4D64-BD37-AE94A3FD6413}",
+        "isLeagueManager": false
+    }, {
+        "displayName": "Lindsaymiller17",
+        "id": "{68281005-7AD4-4204-A810-057AD4020429}",
+        "isLeagueManager": false
+    }, {
+        "displayName": "4222Beth",
+        "id": "{75658686-6BB7-478B-A586-866BB7D78BED}",
+        "isLeagueManager": false
+    }, {
+        "displayName": "kerdil6498135",
+        "id": "{845BFE25-2E3D-45E2-BB9A-012FCA3A57DF}",
+        "isLeagueManager": false
+    }, {
+        "displayName": "frvwfr2",
+        "id": "{9157755A-3771-40E6-A999-DE386A33337F}",
+        "isLeagueManager": false
+    }, {
+        "displayName": "DMillertarized",
+        "id": "{C02B38AC-0E0F-4CE3-AB38-AC0E0F2CE320}",
+        "isLeagueManager": false
+    }],
+    "scoringPeriodId": 1,
+    "seasonId": 2020,
+    "segmentId": 0,
+    "settings": {
+        "name": "Everyone and their brother"
+    },
+    "status": {
+        "currentMatchupPeriod": 1,
+        "isActive": true,
+        "latestScoringPeriod": 1
+    },
+    "teams": [{
+        "abbrev": "F+",
+        "id": 1,
+        "location": "Test Results: ",
+        "nickname": "Pending",
+        "owners": ["{68281005-7AD4-4204-A810-057AD4020429}"]
+    }, {
+        "abbrev": "SOSI",
+        "id": 2,
+        "location": "Spaced Out",
+        "nickname": "Social Isolates",
+        "owners": ["{C02B38AC-0E0F-4CE3-AB38-AC0E0F2CE320}"]
+    }, {
+        "abbrev": "RNA",
+        "id": 3,
+        "location": "The",
+        "nickname": "Viral Load",
+        "owners": ["{67FD37AE-94A3-4D64-BD37-AE94A3FD6413}"]
+    }, {
+        "abbrev": "MILL",
+        "id": 4,
+        "location": "Helmet",
+        "nickname": "Head",
+        "owners": ["{4DCA8C0B-F8EB-4E43-8A8C-0BF8EBBE431A}"]
+    }, {
+        "abbrev": "BOSH",
+        "id": 5,
+        "location": "Team ",
+        "nickname": " Clegg",
+        "owners": ["{845BFE25-2E3D-45E2-BB9A-012FCA3A57DF}"]
+    }, {
+        "abbrev": "ROMO",
+        "id": 6,
+        "location": "Coromovirus",
+        "nickname": "Hotline",
+        "owners": ["{75658686-6BB7-478B-A586-866BB7D78BED}"]
+    }, {
+        "abbrev": "POKE",
+        "id": 7,
+        "location": "Stung by",
+        "nickname": "AB",
+        "owners": ["{3FEFC051-6115-43D6-AFC0-516115F3D625}"]
+    }, {
+        "abbrev": "AAS",
+        "id": 8,
+        "location": "Autodraft",
+        "nickname": "All-Stars",
+        "owners": ["{30A5B886-430B-4A5B-8D83-8F25539538A7}"]
+    }, {
+        "abbrev": "SMD",
+        "id": 9,
+        "location": "Church of",
+        "nickname": "Saquon",
+        "owners": ["{013A40E9-39E7-4755-B964-8EA33F37684C}"]
+    }, {
+        "abbrev": "FM",
+        "id": 11,
+        "location": "The Fantom",
+        "nickname": "Menace",
+        "owners": ["{19E9E8F2-4E05-4474-A9E8-F24E05047450}"]
+    }, {
+        "abbrev": "EFT",
+        "id": 12,
+        "location": "Edmonton",
+        "nickname": "Football Team",
+        "owners": ["{322BCBE7-BD43-4DE9-8D8C-41067DFFD93A}"]
+    }, {
+        "abbrev": "CLEG",
+        "id": 13,
+        "location": "Team",
+        "nickname": "Clegg",
+        "owners": ["{9157755A-3771-40E6-A999-DE386A33337F}"]
+    }]
+}
