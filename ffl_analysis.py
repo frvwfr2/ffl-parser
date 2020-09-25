@@ -50,7 +50,7 @@ class Team:
         actual_record = f"({self.actual_w}-{self.actual_l}-{self.actual_t})"
         expected_record = f"{self.expected_w:.2f}-{self.expected_l:.2f}-{self.expected_t:.2f}"
 
-        return f"{self.id:>3}. {self.abbrev:>5} {self.name:>30} {avg_score:>6.2f} ({optimal_avg_score:>6.2f}) {actual_record:>} // ({expected_record}) // {(self.actual_w-self.expected_w):>+4.2f}"
+        return f"{self.id:>3}. {self.abbrev:>5} {self.name:>30} {avg_score:>6.2f} {optimal_avg_score:>6.2f} {actual_record:>} // ({expected_record}) // {(self.actual_w-self.expected_w):>+4.2f}"
 
 class League:
     def __init__(self, id, year):
@@ -68,7 +68,7 @@ class League:
         with open("league.json", "w") as f:
             print(json.dumps(self.raw_league, indent=4), file=f)
         if "messages" in self.raw_league and self.raw_league["messages"][0]=="You are not authorized to view this League.":
-            print("You are not authorized to view this league")
+            print("You are not authorized to view this league\n")
 
 
     def get_optimal_scores(self):
@@ -83,7 +83,7 @@ class League:
                 print(json.dumps(weekly_rosters, indent=4), file=f)
 
             for team in weekly_rosters['teams']:
-                print(team["id"])
+                # print(team["id"])
                 for entry in team["roster"]["entries"]:
                     eligible = list()
                     # if entry["playerId"] == 4047365:
@@ -119,7 +119,7 @@ class League:
                     else:
                         pass
                         # print(f'{slot:>2} {0:<6.2f} {"None":>30}')
-                print(f"   {optimal_score:>6.2f}")
+                # print(f"   {optimal_score:>6.2f}")
                 self.teams[team["id"]].optimal_scores[scoring_period] = optimal_score
 
         # &view=mSettings to get legal positional listings
@@ -128,7 +128,7 @@ class League:
     def print_teams(self):
         # for student in (sorted(student_Dict.values(), key=operator.attrgetter('age'))):
         #     print(student.name)
-        print(f'{"ID":>3}. {"ABBR":>5} {"Team name":>30} {"Avg":>6} ({"Optimal":>6}) {"Record":>} // ({"Expected"}) // {("Luck rating"):>}')
+        print(f'{"ID":>3}. {"ABBR":>5} {"Team name":>30} {"Avg":>6} {"Optimal":>6} {"Record":>} // ({"Expected"}) // {("Luck rating"):>}')
         for team in (sorted(self.teams.values(), reverse=True, key=operator.attrgetter('expected_w'))):
             print(team)
         # for index, team in self.teams.items():
@@ -245,8 +245,9 @@ if __name__ == "__main__":
     # run code
     matchups_file = ""
     # matchups_file = "D:/projects/current_matchups.json"
-    league_file = "D:/projects/league_teams.json"
-    league_id = "642470"
+    # league_file = "D:/projects/league_teams.json"
+    league_id = "642470" # Lindsay's league
+    # league_id = "252353" # 
     year = 2020
 
     # if matchups_file:
