@@ -151,7 +151,7 @@ class League:
     def print_teams(self):
         # for student in (sorted(student_Dict.values(), key=operator.attrgetter('age'))):
         #     print(student.name)
-        print(f'{"ID":>3}. {"ABBR":>5} {"Team name":>30} {"Avg":>6} {"Optimal":>6} {"Record":>} // ({"Expected"}) // {("Luck rating"):>}')
+        print(f'{"ID":>3}. {"ABBR":>5} {"Team name":>30} {"Avg":>6} {"Optimal":>6} [{"Pct":>6}] {"Record":>} // ({"Expected"}) // {("Luck rating"):>}')
         for team in (sorted(self.teams.values(), reverse=True, key=operator.attrgetter('expected_w'))):
             print(team)
         # for index, team in self.teams.items():
@@ -161,6 +161,7 @@ class League:
         # expected, optimal_vs_optimal, optimal_vs_actual
         # Each key in weekly_scores is a week of scores, value is list of tupes (teamID, score)
         weekly_scores = dict()
+        # Build up the weekly_scores dict
         # for each team in the league
         for index, team in self.teams.items():
             # for each week we have a score for
@@ -168,7 +169,7 @@ class League:
                 # If the week index doesnt exist yet, put it in there
                 if week not in weekly_scores:
                     weekly_scores[week] = list()
-                # Add this team.id, score, to the weekly_scores for this week
+                # Add this (team.id, score), to the weekly_scores for this week
                 weekly_scores[week].append( (team.id, score) )
         # For each week we have scores for 
         for week, scores in weekly_scores.items():
