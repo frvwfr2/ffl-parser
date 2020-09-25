@@ -5,6 +5,7 @@ import requests
 import json
 import operator
 import itertools
+import matplotlib.pyplot as plt
 
 class Team:
     # owners is a list
@@ -26,50 +27,72 @@ class Team:
         self.actual_w = 0
         self.actual_l = 0
         self.actual_t = 0
-    
-    # types are actual, optimal, expected ?
+
+        # Expected Optimal vs Actual record
+        self.optimal_v_actual_w = 0
+        self.optimal_v_actual_l = 0
+        self.optimal_v_actual_t = 0
+
+        # Expected Optimal vs Optimal record
+        self.optimal_v_optimal_w = 0
+        self.optimal_v_optimal_l = 0
+        self.optimal_v_optimal_t = 0
+
+    # This function needs to be in the League, and it should just calculate them all, and fill in the attributes
+    # for each team
     def get_record(self, type="actual"):
         pass
 
-    # Print output
-    def __repr__(self):
-        #get avg score
+    def get_avg_score(self):
         avg_score = 0
         weeks = 0
         for week, score in self.scores.items():
             weeks += 1
             avg_score += score
-        avg_score = avg_score/weeks
+        return avg_score/weeks
+
+    def get_avg_optimal_score(self):
         optimal_avg_score = 0
         weeks = 0
         for week, score in self.optimal_scores.items():
             weeks += 1
             optimal_avg_score += score
-        optimal_avg_score = optimal_avg_score/weeks
+        return optimal_avg_score / weeks
+
+    # Print output
+    def __repr__(self):
+        #get avg score
+        avg_score = self.get_avg_score()
+        optimal_avg_score = self.get_avg_optimal_score()
+        avg_score_pct_diff = 100 * avg_score / optimal_avg_score
 
         actual_record = f"({self.actual_w}-{self.actual_l}-{self.actual_t})"
         expected_record = f"{self.expected_w:.2f}-{self.expected_l:.2f}-{self.expected_t:.2f}"
 
-        return f"{self.id:>3}. {self.abbrev:>5} {self.name:>30} {avg_score:>6.2f} {optimal_avg_score:>6.2f} {actual_record:>} // ({expected_record}) // {(self.actual_w-self.expected_w):>+4.2f}"
+        return f"{self.id:>3}. {self.abbrev:>5} {self.name:>30} {avg_score:>6.2f} {optimal_avg_score:>6.2f} [{avg_score_pct_diff:>6.2f}%] {actual_record:>} // ({expected_record}) // {(self.actual_w-self.expected_w):>+4.2f}"
 
 class League:
-    def __init__(self, id, year):
+    def __init__(self, id, year, league_file=None):
         self.id = id
         # Dictionary of Teams, with Team_ID as the key ? 
         self.teams = dict()
-        self.gather_raw_data()
+        if league_file is None:
+            self.raw_league = self.gather_raw_data()
+        else:
+            with open(league_file) as f:
+                self.raw_league = json.load(f)
         self.year = year
 
     def gather_raw_data(self):
         # League ID = 642470
         # Get League info and Matchup info
         r = requests.get(f"https://fantasy.espn.com/apis/v3/games/ffl/seasons/{year}/segments/0/leagues/{league_id}?view=mSettings&view=mTeam&view=mMatchup")
-        self.raw_league = r.json()
+        # self.raw_league = r.json()
         with open("league.json", "w") as f:
-            print(json.dumps(self.raw_league, indent=4), file=f)
-        if "messages" in self.raw_league and self.raw_league["messages"][0]=="You are not authorized to view this League.":
+            print(json.dumps(r.json(), indent=4), file=f)
+        if "messages" in r.json() and r.json()["messages"][0] == "You are not authorized to view this League.":
             print("You are not authorized to view this league\n")
-
+        return r.json()
 
     def get_optimal_scores(self):
         players = []
@@ -135,18 +158,21 @@ class League:
         #     print(team)
 
     def get_expected_records(self):
-        # Generate the weekly scores, as a list, with (teamID, score) formatted tuple
+        # expected, optimal_vs_optimal, optimal_vs_actual
+        # Each key in weekly_scores is a week of scores, value is list of tupes (teamID, score)
         weekly_scores = dict()
         # for each team in the league
         for index, team in self.teams.items():
             # for each week we have a score for
             for week, score in team.scores.items():
+                # If the week index doesnt exist yet, put it in there
                 if week not in weekly_scores:
                     weekly_scores[week] = list()
+                # Add this team.id, score, to the weekly_scores for this week
                 weekly_scores[week].append( (team.id, score) )
         # For each week we have scores for 
         for week, scores in weekly_scores.items():
-            # For 
+            # For every possible matchup combination...
             for a, b in itertools.combinations(weekly_scores[week], 2):
                 team_a = self.teams[a[0]]
                 team_b = self.teams[b[0]]
@@ -161,7 +187,8 @@ class League:
                     team_a.expected_t += 1/(len(self.teams)-1)
                     team_b.expected_t += 1/(len(self.teams)-1)
                 # print(a, b)
-
+        # Need another loop for each team, replace that team's value with their optimal, and run the same comparison
+        # Then we need to replace every team with Optimal, and run the same comparison again
         # print(weekly_scores)
         pass
 
@@ -226,6 +253,11 @@ class League:
         # print(self.teams)
         pass
 
+
+    def calculate_records(self):
+        pass
+
+
 class Player:
     def __init__(self, id, name, score, eligibleSlots):
         self.id = id
@@ -240,6 +272,48 @@ class Player:
 def analyze_matchups(d):
     pass
     # league_name
+
+
+def add_value_labels(ax, spacing=5):
+    """Add labels to the end of each bar in a bar chart.
+
+    Arguments:
+        ax (matplotlib.axes.Axes): The matplotlib object containing the axes
+            of the plot to annotate.
+        spacing (int): The distance between the labels and the bars.
+    """
+
+    # For each bar: Place a label
+    for rect in ax.patches:
+        # Get X and Y placement of label from rect.
+        y_value = rect.get_height()
+        x_value = rect.get_x() + rect.get_width() / 2
+
+        # Number of points between bar and label. Change to your liking.
+        space = spacing
+        # Vertical alignment for positive values
+        va = 'bottom'
+
+        # If value of bar is negative: Place label below bar
+        if y_value < 0:
+            # Invert space to place label below
+            space *= -1
+            # Vertically align label at top
+            va = 'top'
+
+        # Use Y value as label and format number with one decimal place
+        label = "{:.1f}".format(y_value)
+
+        # Create annotation
+        ax.annotate(
+            label,                      # Use `label` as label
+            (x_value, y_value),         # Place label at end of the bar
+            xytext=(0, space),          # Vertically shift label by `space`
+            textcoords="offset points", # Interpret `xytext` as offset in points
+            ha='center',                # Horizontally center label
+            va=va)                      # Vertically align label differently for
+                                        # positive and negative values.
+
 
 if __name__ == "__main__":
     # run code
@@ -263,3 +337,36 @@ if __name__ == "__main__":
         league.get_optimal_scores()
         league.print_teams()
 
+        # Get the list of avg scores, ordered by... Team ID
+        # Get the list of optimal scores, ordered by Team ID
+        avgs = []
+        optimals = []
+        team_names = []
+        for team in league.teams:
+            team_names.append(league.teams[team].name)
+            avgs.append(league.teams[team].get_avg_score())
+            optimals.append(league.teams[team].get_avg_optimal_score())
+        # print(team_names, avgs, optimals)
+
+        width = .8
+        plt.style.use('dark_background')
+        plt.bar(team_names, avgs, width=.8*width, color='tab:gray', label="Avg")
+        plt.bar(team_names, optimals, width=.5*width, color='tab:red', label="Optimal")
+        plt.subplots_adjust(bottom=0.3)
+
+        plt.legend()
+        # plt.tight_layout()
+        plt.xticks(
+            rotation=45,
+            horizontalalignment='right',
+            fontweight='light',
+            fontsize='x-large'
+        )
+
+        # Call the function above. All the magic happens there.
+        ax = plt.gca()
+
+        add_value_labels(ax)
+
+        plt.show()
+        # Plot them overlapping
