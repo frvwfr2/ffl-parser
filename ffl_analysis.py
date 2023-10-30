@@ -1,6 +1,7 @@
 # gets FFL league info and does luck analysis
 
 #%% 
+from os import unlink
 import requests
 import json
 import operator
@@ -13,8 +14,13 @@ class Team:
     def __init__(self, name, abbrev, owners, id):
         self.id = id
         self.owners = owners
+        self.owner_name = ""
         self.name = name
         self.abbrev = abbrev
+
+        self.avg_score = 0
+        self.avg_optimal_score = 0
+
         # Each key is the week it was scored during
         self.scores = dict()
         self.optimal_scores = dict()
@@ -50,27 +56,33 @@ class Team:
         for week, score in self.scores.items():
             weeks += 1
             avg_score += score
+        self.avg_score = avg_score/weeks
         return avg_score/weeks
 
     def get_avg_optimal_score(self):
         optimal_avg_score = 0
         weeks = 0
         for week, score in self.optimal_scores.items():
+            # print(week, score)
             weeks += 1
             optimal_avg_score += score
+        self.avg_optimal_score = optimal_avg_score/weeks
         return optimal_avg_score / weeks
 
     # Print output
     def __repr__(self):
         #get avg score
-        avg_score = self.get_avg_score()
-        optimal_avg_score = self.get_avg_optimal_score()
-        avg_score_pct_diff = 100 * avg_score / optimal_avg_score
+        self.avg_score = self.get_avg_score()
+        self.optimal_avg_score = self.get_avg_optimal_score()
+        avg_score_pct_diff = 100 * self.avg_score / self.optimal_avg_score
 
         actual_record = f"({self.actual_w}-{self.actual_l}-{self.actual_t})"
         expected_record = f"{self.expected_w:.2f}-{self.expected_l:.2f}-{self.expected_t:.2f}"
 
-        return f"{self.id:>3}. {self.abbrev:>5} {self.name:>30} {avg_score:>6.2f} {optimal_avg_score:>6.2f} [{avg_score_pct_diff:>6.2f}%] {actual_record:>} // ({expected_record}) // {(self.actual_w-self.expected_w):>+4.2f} // {self.optimal_v_optimal_w:>4.2f} // {self.optimal_v_actual_w:>4.2f}"
+        # self.actual_w-self.expected_w is the Luck Rating
+        self.luck_rating = self.actual_w-self.expected_w
+        self.luck_percent = 100 * self.luck_rating / (self.actual_w + self.actual_t + self.actual_l)
+        return f"{self.id:>3}. {self.abbrev:>5} {self.owner_name:>20} {self.avg_score:>6.2f} {self.optimal_avg_score:>6.2f} [{avg_score_pct_diff:>6.2f}%] {actual_record:>8} // ({expected_record:>17}) // {self.luck_rating:>+4.2f} // {self.luck_percent:>+5.1f}% // {self.optimal_v_optimal_w:>4.2f} // {self.optimal_v_actual_w:>4.2f}"
 
 class League:
     def __init__(self, id, year, league_file=None):
@@ -91,7 +103,9 @@ class League:
     def gather_raw_data(self):
         # League ID = 642470
         # Get League info and Matchup info
-        r = requests.get(f"https://fantasy.espn.com/apis/v3/games/ffl/seasons/{year}/segments/0/leagues/{league_id}?view=mSettings&view=mTeam&view=mMatchup")
+        matchup_url = f"https://fantasy.espn.com/apis/v3/games/ffl/seasons/{year}/segments/0/leagues/{league_id}?view=mSettings&view=mTeam&view=mMatchup"
+        print(f"Matchup URL: {matchup_url}")
+        r = requests.get(matchup_url)
         # self.raw_league = r.json()
         with open("league.json", "w") as f:
             print(json.dumps(r.json(), indent=4), file=f)
@@ -102,10 +116,11 @@ class League:
     def get_optimal_scores(self):
         players = []
         for week in range(1, self.current_scoring_period):
-            print("week: ", week)
             scoring_period = week
             # scoring_period = 2
-            r = requests.get(f"https://fantasy.espn.com/apis/v3/games/ffl/seasons/{self.year}/segments/0/leagues/{self.id}?scoringPeriodId={scoring_period}&view=mRoster")
+            week_url = f"https://fantasy.espn.com/apis/v3/games/ffl/seasons/{self.year}/segments/0/leagues/{self.id}?scoringPeriodId={scoring_period}&view=mRoster"
+            print(f"week: {week} ({week_url})")
+            r = requests.get(week_url)
             weekly_rosters = r.json()
             with open("rosters.json", "w") as f:
                 print(json.dumps(weekly_rosters, indent=4), file=f)
@@ -118,7 +133,7 @@ class League:
                     for slot in entry["playerPoolEntry"]["player"]["eligibleSlots"]:
                         eligible.append(slot)
                     for stat in entry["playerPoolEntry"]["player"]["stats"]:
-                        if stat["seasonId"] == 2020 and stat["scoringPeriodId"] == scoring_period and stat["statSourceId"] == 0:
+                        if stat["seasonId"] == self.year and stat["scoringPeriodId"] == scoring_period and stat["statSourceId"] == 0:
                             players.append(Player(entry["playerId"], entry["playerPoolEntry"]["player"]["fullName"], stat["appliedTotal"], eligible))
                             # print(f'{stat["appliedTotal"]:<6.2f} {entry["playerPoolEntry"]["player"]["fullName"]:>30} {eligible}')
                             # print(json.dumps(stat, indent=4))
@@ -130,6 +145,7 @@ class League:
                     # print(slot * count)
                     # total_slots.append()
                 optimal_score = 0
+                # We are filling each slot of a lineup with the optimal player. Flex positions last
                 for slot in total_slots:
                     curr_high_score = 0
                     curr_high_player = None
@@ -156,9 +172,21 @@ class League:
     def print_teams(self):
         # for student in (sorted(student_Dict.values(), key=operator.attrgetter('age'))):
         #     print(student.name)
-        print(f'{"ID":>3}. {"ABBR":>5} {"Team name":>30} {"Avg":>6} {"Optimal":>6} [{"Pct":>6}] {"Record":>} // ({"Expected"}) // {("Luck rating"):>} // {"Exp W if everyone played perfect // Exp W if this team played perfect"}')
+        print(f'{"ID":>3}. {"ABBR":>5} {"Manager name":>20} {"Avg":>6} {"Optiml":>6} [{"Percent":>7}] {"(Recrd)":>8} // ({"(Expected)":>17} // {("Luck rating"):>} // {("Luck %"):>6} // {"Exp W if everyone played perfect // Exp W if this team played perfect"}')
+        pos_luck = 0
+        luckiest_team = None
+        unluckiest_team = None
         for team in (sorted(self.teams.values(), reverse=True, key=operator.attrgetter('expected_w'))):
             print(team)
+            if team.luck_rating > 0:
+                pos_luck += team.luck_rating
+            if luckiest_team is None or team.luck_rating > luckiest_team.luck_rating:
+                luckiest_team = team
+            if unluckiest_team is None or team.luck_rating < unluckiest_team.luck_rating:
+                unluckiest_team = team
+        print(f"Total +/- luck: {pos_luck:4.2f}")
+        print(f"Luckiest team is {luckiest_team.owner_name} with {100*luckiest_team.luck_rating/pos_luck:5.2f}% of the league's luck")
+        print(f"Unluckiest team is {unluckiest_team.owner_name} with {-100*unluckiest_team.luck_rating/pos_luck:5.2f}% of the league's luck")
         # for index, team in self.teams.items():
         #     print(team)
 
@@ -201,7 +229,7 @@ class League:
                     team_a.expected_t += 1/(len(self.teams)-1)
                     team_b.expected_t += 1/(len(self.teams)-1)
                 # print(a, b)
-        print(weekly_scores['optimal'])
+        # print(weekly_scores['optimal'])
         for week, optimals in weekly_scores['optimal'].items():
             for a, b in itertools.combinations(weekly_scores['optimal'][week], 2):
                 team_a = self.teams[a[0]]
@@ -250,9 +278,16 @@ class League:
         # print(weekly_scores)
         pass
 
+    def get_owner_from_guid(self, guid):
+        members = self.raw_league["members"]
+        for member in members:
+            if member["id"] == guid:
+                return member
+
     def analyze_league_info(self):
         self.name = self.raw_league["settings"]["name"]
         self.current_scoring_period = self.raw_league["scoringPeriodId"]
+        print(f"Current scoring period: {self.current_scoring_period}")
         self.lineupSlotCounts = self.raw_league["settings"]["rosterSettings"]["lineupSlotCounts"]
         # Remove slot 20, as that is the bench
         self.lineupSlotCounts.pop("20", None)
@@ -263,18 +298,26 @@ class League:
         # print(members_dict)
 
         for team in self.raw_league["teams"]:
-            team_name = team["location"] + " " + team["nickname"]
+            # team_name = team["location"] + " " + team["nickname"]
+            team_name = team["name"]
+            # This is a list of guids for each owner of the team
+            # We want to turn these into Fullnames
+            owner_info = self.get_owner_from_guid(team["owners"][0])
+            owner_name = f'{owner_info["firstName"]} {owner_info["lastName"]}'
+            # print(owner_name)
             team_owners = team["owners"]
             team_id = team["id"]
             team_abbrev = team["abbrev"]
 
             t = Team(team_name, team_abbrev, team_owners, team_id)
+            t.owner_name = owner_name
             self.teams[team_id] = t
             # teams_dict[team_name] = members_dict[team["owners"][0]]
 
         for matchup in self.raw_league["schedule"]:
             matchup_period = matchup["matchupPeriodId"]
             winner = matchup["winner"]
+
             # print(matchup)
             # If this matchup isn't decided, don't try to get scoring info
             if winner == "UNDECIDED":
@@ -314,10 +357,14 @@ class League:
         avgs = []
         optimals = []
         team_names = []
-        for team in self.teams:
-            team_names.append(self.teams[team].name)
-            avgs.append(self.teams[team].get_avg_score())
-            optimals.append(self.teams[team].get_avg_optimal_score())
+        for team in self.teams.values():
+            team.get_avg_score()
+            team.get_avg_optimal_score()
+            # avg_optimal_score
+        for team in (sorted(self.teams.values(), reverse=True, key=operator.attrgetter('avg_score'))):
+            team_names.append(team.owner_name)
+            avgs.append(team.avg_score)
+            optimals.append(team.avg_optimal_score)
         # print(team_names, avgs, optimals)
 
         width = .8
@@ -350,7 +397,7 @@ class League:
         team_names = []
         luck_values = []
         for team in (sorted(self.teams.values(), reverse=False, key=operator.attrgetter('actual_w'))):
-            team_names.append(team.name)
+            team_names.append(team.owner_name)
             actuals.append(team.actual_w)
             optimals_v_optimals.append(team.optimal_v_optimal_w)
             optimals_v_actuals.append(team.optimal_v_actual_w)
@@ -359,12 +406,13 @@ class League:
 
         
         height = .8
+        plt.style.use('dark_background')
         # plt.style.use('dark_background')
         # Need to go from best to worst
         plt.barh(team_names, expected, height=.8*height, color="tab:purple", label="Expected")
         plt.barh(team_names, optimals_v_actuals, height=.5*height, color="tab:blue", label="Optimal v Actual")
         plt.barh(team_names, optimals_v_optimals, height=.5*height, color="tab:green",label="Optimal v Optimal")
-        plt.barh(team_names, actuals, height=.8*height, label="Actual", fc=(0, 0, 0, 0), lw=3, ls="-", edgecolor="black")
+        plt.barh(team_names, actuals, height=.8*height, label="Actual", fc=(0, 0, 0, 0), lw=2, ls="-", edgecolor="white")
         # plt.barh(team_names, luck_values, height=.1*height, label="Luck Rating", color="white", left=expected, alpha=.5)
         # plt.subplots_adjust(bottom=0.3)
 
@@ -484,8 +532,12 @@ if __name__ == "__main__":
     # matchups_file = "D:/projects/current_matchups.json"
     # league_file = "D:/projects/league_teams.json"
     league_id = "642470" # Lindsay's league
+    # league_id = "1263497665" # Beth's youth leage
+    # league_id = "90601362" # Smothy's league
     # league_id = "252353" # 
-    year = 2020
+
+    # year = 2019
+    year = 2023
 
     # if matchups_file:
     #     l = parse_league_info(league_file)
@@ -494,6 +546,7 @@ if __name__ == "__main__":
     #     d, l = get_league_json(league_id, year)
     if True:
         league = League(league_id, year)
+        print(f"Current scoring period: {league.current_scoring_period}")
         # Gets the basic info, like current W/L, Expected W/L
         league.print_teams()
         # league.show_scores_chart()
